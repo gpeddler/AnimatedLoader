@@ -1,16 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-export default class Test extends React.Component {
+export default class Loader extends React.Component {
     constructor(props) {
         super(props);
 
-        this.radius = parseInt(props.radius);
+        this.radius = 100;
         this.padding = 30;
-        this.color = [
-            [40, 235, 169],
-            [67, 205, 245]
-        ];
+
+        this.speed = props.speed;
+        this.text = props.text;
+        this.color = props.colors;
     }
 
     componentDidMount() {
@@ -45,7 +45,7 @@ export default class Test extends React.Component {
             x: 0,
             y: 0,
             radius: this.radius,
-            speed: 3,
+            speed: this.speed,
             tail_size: 15,
             tails: []
         };
@@ -97,7 +97,7 @@ export default class Test extends React.Component {
         context.font = "37px Arial";
         context.fillStyle = "#d2d2d2";
         context.textAlign = "center";
-        context.fillText("FNIAX", this.screen.width / 2, this.screen.height / 2 + 13);
+        context.fillText(this.text, this.screen.width / 2, this.screen.height / 2 + 13);
     }
 
     _drawCircle(context) {
@@ -173,6 +173,8 @@ export default class Test extends React.Component {
     }
 }
 
-Test.Proptypes = {
-    radius: React.PropTypes.string.isRequired
+Loader.Proptypes = {
+    speed: React.PropTypes.number.isRequired,
+    text: React.PropTypes.string.isRequired,
+    colors: React.PropTypes.array.isRequired
 };
