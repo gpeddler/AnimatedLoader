@@ -61,7 +61,7 @@
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var _loader = __webpack_require__(164);
+	var _loader = __webpack_require__(160);
 
 	var _loader2 = _interopRequireDefault(_loader);
 
@@ -19661,11 +19661,7 @@
 
 
 /***/ },
-/* 160 */,
-/* 161 */,
-/* 162 */,
-/* 163 */,
-/* 164 */
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -19721,12 +19717,7 @@
 	            };
 
 	            this._initCanvas();
-	            this._timer = setInterval(this._updateCanvas.bind(this, context), 33);
-	        }
-	    }, {
-	        key: 'componentWillUnmount',
-	        value: function componentWillUnmount() {
-	            clearInterval(this._timer);
+	            requestAnimationFrame(this._updateCanvas.bind(this, context));
 	        }
 	    }, {
 	        key: 'render',
@@ -19738,14 +19729,14 @@
 	    }, {
 	        key: '_initCanvas',
 	        value: function _initCanvas() {
-	            this._ticker = 0;
+	            this._angle = this._toRadian(270);
 
 	            this._dot = {
 	                x: 0,
 	                y: 0,
 	                radius: this.radius,
 	                speed: this.speed,
-	                tail_size: 15,
+	                tail_size: 30,
 	                tails: []
 	            };
 
@@ -19753,30 +19744,56 @@
 	                x: this.screen.width / 2,
 	                y: this.screen.height / 2,
 	                radius: this.radius,
-	                thickness: 4
+	                thickness: 4,
+	                spread: []
 	            };
 	        }
 	    }, {
 	        key: '_updateCanvas',
 	        value: function _updateCanvas(context) {
-	            this._ticker++;
+	            var _this2 = this;
 
-	            if (this._dot.tails.length >= this._dot.tail_size) {
-	                this._dot.tails.splice(0, 1);
+	            this._angle += this._toRadian(this._dot.speed);
+	            if (this._dot.speed < this.speed) {
+	                this._dot.speed = this.speed;
 	            }
 
-	            if (this._dot.x != 0) {
-	                this._dot.tails.push({
-	                    x: this._dot.x,
-	                    y: this._dot.y
-	                });
+	            var remove = [];
+	            this._circle.spread.forEach(function (radius, i) {
+	                _this2._circle.spread[i] = radius + 0.2;
+	                if (radius + 1 > _this2.radius + _this2.padding) {
+	                    remove.push(i);
+	                }
+	            });
+
+	            remove.forEach(function (index) {
+	                _this2._circle.spread.splice(index, 1);
+	            });
+
+	            for (var i = 0; i < this._dot.tail_size; i++) {
+	                var angle_tail = this._angle - this._toRadian(this._dot.tail_size - i - 1) * this._dot.speed / 2;
+	                this._dot.tails[i] = {
+	                    x: this.radius * Math.cos(angle_tail) + this.screen.width / 2,
+	                    y: this.radius * Math.sin(angle_tail) + this.screen.width / 2
+	                };
 	            }
 
-	            var angle = this._ticker * this._dot.speed * Math.PI / 180;
-	            this._dot.x = this.radius * Math.cos(angle) + this.screen.width / 2;
-	            this._dot.y = this.radius * Math.sin(angle) + this.screen.height / 2;
+	            this._dot.x = this.radius * Math.cos(this._angle) + this.screen.width / 2;
+	            this._dot.y = this.radius * Math.sin(this._angle) + this.screen.height / 2;
+
+	            if (this._toDegree(this._angle) > 270 || this._toDegree(this._angle) < 90) {
+	                this._dot.speed += 0.1;
+	            } else {
+	                this._dot.speed -= 0.1;
+	            }
+
+	            // Circle Spread
+	            if (this._toDegree(this._angle) < 270 && this._toDegree(this._angle) + this._dot.speed >= 270) {
+	                this._circle.spread.push(this._circle.radius);
+	            }
 
 	            this._drawCanvas(context);
+	            requestAnimationFrame(this._updateCanvas.bind(this, context));
 	        }
 	    }, {
 	        key: '_drawCanvas',
@@ -19803,6 +19820,8 @@
 	    }, {
 	        key: '_drawCircle',
 	        value: function _drawCircle(context) {
+	            var _this3 = this;
+
 	            context.beginPath();
 
 	            context.arc(this._circle.x, this._circle.y, this._circle.radius, 0, Math.PI * 2, false);
@@ -19811,6 +19830,15 @@
 	            context.stroke();
 
 	            context.closePath();
+
+	            this._circle.spread.forEach(function (radius) {
+	                context.beginPath();
+	                context.arc(_this3._circle.x, _this3._circle.y, radius, 0, Math.PI * 2, false);
+	                context.lineWidth = 1;
+	                context.strokeStyle = _this3._toRGB(_this3.color[1], (1 - (radius - _this3._circle.radius) / _this3.padding).toFixed(2));
+	                context.stroke();
+	                context.closePath();
+	            });
 	        }
 	    }, {
 	        key: '_drawCircleLight',
@@ -19852,7 +19880,7 @@
 	    }, {
 	        key: '_drawDot',
 	        value: function _drawDot(context) {
-	            var _this2 = this;
+	            var _this4 = this;
 
 	            var gradient = context.createRadialGradient(this._dot.x, this._dot.y, 0, this._dot.x, this._dot.y, 6);
 	            gradient.addColorStop(0, this._toRGB(this.color[0], 1));
@@ -19868,7 +19896,7 @@
 	            this._dot.tails.forEach(function (position, i) {
 	                context.beginPath();
 	                context.arc(position.x, position.y, 6, 0, Math.PI * 2, false);
-	                context.fillStyle = _this2._toRGB(_this2.color[0], (i / _this2._dot.tail_size).toFixed(2));
+	                context.fillStyle = _this4._toRGB(_this4.color[0], (i / _this4._dot.tail_size).toFixed(2));
 	                context.fill();
 	                context.closePath();
 	            });
@@ -19877,6 +19905,16 @@
 	        key: '_toRGB',
 	        value: function _toRGB(array, alpha) {
 	            return "rgba(" + array[0] + "," + array[1] + "," + array[2] + "," + alpha + ")";
+	        }
+	    }, {
+	        key: '_toRadian',
+	        value: function _toRadian(degree) {
+	            return degree % 360 * Math.PI / 180;
+	        }
+	    }, {
+	        key: '_toDegree',
+	        value: function _toDegree(radian) {
+	            return radian * 180 / Math.PI % 360;
 	        }
 	    }]);
 

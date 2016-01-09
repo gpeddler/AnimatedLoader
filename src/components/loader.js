@@ -23,11 +23,7 @@ export default class Loader extends React.Component {
         };
 
         this._initCanvas();
-        this._timer = setInterval(this._updateCanvas.bind(this, context), 33);
-    }
-
-    componentWillUnmount() {
-        clearInterval(this._timer);
+        requestAnimationFrame(this._updateCanvas.bind(this, context));
     }
 
     render() {
@@ -39,14 +35,14 @@ export default class Loader extends React.Component {
     }
 
     _initCanvas() {
-        this._ticker = 0;
+        this._angle = this._toRadian(270);
 
         this._dot = {
             x: 0,
             y: 0,
             radius: this.radius,
             speed: this.speed,
-            tail_size: 15,
+            tail_size: 30,
             tails: []
         };
 
@@ -54,29 +50,53 @@ export default class Loader extends React.Component {
             x: this.screen.width / 2,
             y: this.screen.height / 2,
             radius: this.radius,
-            thickness: 4
+            thickness: 4,
+            spread: []
         };
     }
 
     _updateCanvas(context) {
-        this._ticker ++;
-
-        if (this._dot.tails.length >= this._dot.tail_size) {
-            this._dot.tails.splice(0, 1);
+        this._angle += this._toRadian(this._dot.speed);
+        if (this._dot.speed < this.speed) {
+            this._dot.speed = this.speed;
         }
 
-        if (this._dot.x != 0) {
-            this._dot.tails.push({
-                x: this._dot.x,
-                y: this._dot.y
-            });
+        let remove = [];
+        this._circle.spread.forEach((radius, i) => {
+            this._circle.spread[i] = radius + 0.2;
+            if (radius + 1 > this.radius + this.padding) {
+                remove.push(i);
+            }
+        });
+
+        remove.forEach((index) => {
+            this._circle.spread.splice(index, 1);
+        });
+
+        for (let i = 0; i < this._dot.tail_size; i++) {
+            let angle_tail = this._angle - this._toRadian(this._dot.tail_size - i - 1) * this._dot.speed / 2;
+            this._dot.tails[i] = {
+                x: this.radius * Math.cos(angle_tail) + this.screen.width / 2,
+                y: this.radius * Math.sin(angle_tail) + this.screen.width / 2
+            }
         }
 
-        let angle = this._ticker * this._dot.speed * Math.PI / 180;
-        this._dot.x = this.radius * Math.cos(angle) + this.screen.width / 2;
-        this._dot.y = this.radius * Math.sin(angle) + this.screen.height / 2;
+        this._dot.x = this.radius * Math.cos(this._angle) + this.screen.width / 2;
+        this._dot.y = this.radius * Math.sin(this._angle) + this.screen.height / 2;
+
+        if (this._toDegree(this._angle) > 270 || this._toDegree(this._angle) < 90) {
+            this._dot.speed += 0.1;
+        } else {
+            this._dot.speed -= 0.1;
+        }
+
+        // Circle Spread
+        if (this._toDegree(this._angle) < 270 && this._toDegree(this._angle) + this._dot.speed >= 270) {
+            this._circle.spread.push(this._circle.radius);
+        }
 
         this._drawCanvas(context);
+        requestAnimationFrame(this._updateCanvas.bind(this, context));
     }
 
     _drawCanvas(context) {
@@ -109,6 +129,15 @@ export default class Loader extends React.Component {
         context.stroke();
 
         context.closePath();
+
+        this._circle.spread.forEach((radius) => {
+            context.beginPath();
+            context.arc(this._circle.x, this._circle.y, radius, 0, Math.PI * 2, false);
+            context.lineWidth = 1;
+            context.strokeStyle = this._toRGB(this.color[1], (1 - (radius - this._circle.radius) / this.padding).toFixed(2));
+            context.stroke();
+            context.closePath();
+        });
     }
 
     _drawCircleLight(context) {
@@ -170,6 +199,14 @@ export default class Loader extends React.Component {
 
     _toRGB(array, alpha) {
         return "rgba(" + array[0] + "," + array[1] + "," + array[2] + "," + alpha + ")";
+    }
+
+    _toRadian(degree) {
+        return (degree % 360) * Math.PI / 180;
+    }
+
+    _toDegree(radian) {
+        return (radian * 180 / Math.PI) % 360;
     }
 }
 
